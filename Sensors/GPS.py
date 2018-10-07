@@ -1,56 +1,86 @@
 '''
-Howard Webb
-Date: 8/2/2018
-simple GPS reader of USB serial port
-This implements a callback so other applications can hook into the data
-Being a serial read, only one application can access the port at a time
-If multi access is needed, implement gpsd
+USB GPS handler, simple serial reader with parsing
+Note: Only one consumer can use this object because serial ports cannot be shared
+Sentence: RMC
+0 - sentence
+1 - UTC of fix
+2 - Status A=active, V=void
+3 - Latitude
+4 - Longitude
+5 - Speed (knots)
+6 - Track angle in degrees
+7 - Date
+8 - Magnetic variance
+9 - checksum
 
-HOLUX puck uses ttyUSB0
-Vk-172 (U-Block) uses ttyACM0
+Author: Howard Webb
+Date: 2018/10/04
 
 '''
 
-import pynmea2
 import serial
-from datetime import datetime
+
 
 class GPS(object):
+    ''' GPS object '''
 
-    def __init__(self, callback):
+    def __init__(self, callback, port='/dev/ttyUSB0'):
         '''get callback and setup GPS'''
         self._callback = callback
-        self.read()
+        self._port = None
+        try:
+            self._port = serial.Serial(port, baudrate=4800, timeout=1)
+        except Exception:
+            print Exception
 
-    def read(self):
-        '''For each new record, pass it to the callback'''
-        lon = 00.00
-        lat = 00.00
-
-        serialStream = serial.Serial("/dev/ttyACM0", 4800, timeout=0.5)
+    def watch(self):
+        '''For each new record, parse it and pass it to the callback'''
         while True:
-            sentence = serialStream.readline()
-            if (sentence):
-#        print sentence
-                try:
-                    data = pynmea2.parse(sentence)
-                except Exception:
-                    print Exception
-                    continue
-                if data.sentence_type == 'RMC':
-                    ts = data.timestamp                    
-                    lat = data.latitude
-                    lon = data.longitude
-                    date = str(data.datetime)
-                    values = [date, lat, lon]
-                    self._callback(values)
+            self.getSentence()
+
+    def getSentence(self):
+        if self._port is None:
+            values = {'name':None, 'data':None}
+            self._callback(values)
+            return
+
+        if(self._port.inWaiting()>0):
+            ''' Get sentence without blocking '''                
+            new_data = self._port.readline().decode('ascii', errors='replace')            
+            if new_data:
+                values = []
+                sentence = new_data.split(',')
+                if sentence[0]=='$GPRMC':
+                    date = '20' + sentence[9][4:6] + '/' + sentence[9][2:4] + '/' + sentence[9][0:2]
+                    time = sentence[1][0:2]+':'+sentence[1][2:4]+':'+sentence[1][4:6]
+                    timestamp = date + 'T'+time
+                    DD = int(float(sentence[3])/100)
+                    SS = float(sentence[3]) - DD*100
+                    LatDec = DD + SS/60
+                    if sentence[4]=='S':
+                        LatDec = LatDec * -1
+
+                    DD = int(float(sentence[5])/100)
+                    SS = float(sentence[5]) - DD*100
+                    LonDec = DD + SS/60
+                    if sentence[6]=='W':
+                        LonDec = LonDec * -1
                     
+    #                        print "Time: ", timestamp, LatDec, LonDec
+                    values = {'name':sentence[0][1:],'data':{'time':timestamp, 'lat':LatDec, 'lon':LonDec}}
+    #                        print values
+                    self._callback(values)
 
-def callback(rec):
-    print rec
 
+def testCallback(value):
+    ''' callback for test, simply print content '''
+    print value
+                                   
 def test():
-    gps = GPS(callback)
-    
+    ''' Test function for GPS object '''
+    s = GPS(testCallback)
+    s.watch()
+
 if __name__=="__main__":
-    test()
+    test()                                   
+                                   
