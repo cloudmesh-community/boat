@@ -1,57 +1,59 @@
-'''
+"""
 Code modified from:
 apps.fishandwhistle.net/archives/1155
 
 Simple utility for checking serial port usage
 Scan all ports and check if have GPS or Sonar message
 
-'''
+"""
 
 import serial
 import sys
 import glob
 
+
 def readSerial(port):
-    print "Read", port
+    print("Read", port)
     try:
         with serial.Serial(port, baudrate=4800, timeout=1) as ser:
             # read 10 lines from the serial output
             for i in range(10):
                 line = ser.readline().decode('ascii', errors='replace')
-                print "Line", line
+                print("Line", line)
                 msg = line.split(',')
-                print msg[0]
+                print(msg[0])
                 if msg[0] == '$GPGGA':
-    #                print msg
+                    #                print msg
                     pass
                 elif msg[0] == '$GPRMC':
-                    print "Time: ", '20' + msg[9][4:6] + '/' + msg[9][2:4] + '/' + msg[9][0:2]
+                    print("Time: ", '20' + msg[9][4:6] + '/' + msg[9][2:4] + '/' + msg[9][0:2])
                 else:
-    #                print msg
+                    #                print msg
                     pass
     except Exception as e:
-        print e
-            
+        print(e)
 
 
 def _scan_ports():
     if sys.platform.startswith('win'):
-        print "scan Windows"
+        print("scan Windows")
         ports = ['COM%s' % (i + 1) for i in range(256)]
     elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-        print "scan Linux"
+        print("scan Linux")
         # this excludes your current terminal "/dev/tty"
         patterns = ('/dev/tty[A-Za-z]*', '/dev/ttyUSB*')
         ports = [glob.glob(pattern) for pattern in patterns]
         ports = [item for sublist in ports for item in sublist]  # flatten
     elif sys.platform.startswith('darwin'):
-        print "scan Darwin"
+        print("scan Darwin")
         patterns = ('/dev/*serial*', '/dev/ttyUSB*', '/dev/ttyS*')
         ports = [glob.glob(pattern) for pattern in patterns]
         ports = [item for sublist in ports for item in sublist]  # flatten
     else:
         raise EnvironmentError('Unsupported platform')
     return ports
+
+
 '''
 def parseNMEA():
     import pynmea2
@@ -113,11 +115,9 @@ def test():
         sys.stderr.write('Ctrl-C pressed, exiting port scanner\n')    
 '''
 
-            
-if __name__=="__main__":
+if __name__ == "__main__":
     ports = _scan_ports()
-    print ports
+    print(ports)
     port = ports[0]
     for port in ports:
         readSerial(port)
-    

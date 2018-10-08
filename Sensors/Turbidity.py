@@ -7,23 +7,37 @@ Test of the Turbidity meter using an ADC
 
 
 """
+from __future__ import print_function
 # Import the ADS1x15 module.
 from ADS1115 import ADS1115
 
+
 class Turbidity(object):
+    """
+    Turbidity meter
+    """
 
-   def __init__(self):
-      self._adc = ADS1115()
-      self._id = 0
-      self._gain = 1
+    def __init__(self):
+        """
+        initialize the turbidity meter
+        """
+        self._adc = ADS1115()
+        self._id = 0
+        self._gain = 1
 
-   def getRaw(self):
-      return self._adc.read_adc(self._id, gain=self._gain)
+    def get(self):
+        """
+        returns the raw values of the turbidity meter
+        :return:
+        """
+        return self._adc.read_adc(self._id, gain=self._gain)
+
 
 def test():
-    tur = Turbidity()
-    value = tur.getRaw()
-    print( "Turbidity", value)
+    turbidity = Turbidity()
+    value = turbidity.get()
+    print("Turbidity", value)
+
 
 if __name__ == "__main__":
     test()
