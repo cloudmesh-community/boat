@@ -1,1 +1,8 @@
-serial
+This code assumes that the Raspberry Pi has been enabled for I2C (via Application Menu (Raspberry Icon)/Preferences/Raspberry Pi Configuration, then in the Interfaces tab, enabling I2C and 1-Wire.
+GPS and Sonar use the pre-installed serial library.  Other sensors are dependent on the installation of libraries, documented in the sensor code.
+
+The following chanage enables the Raspberry Pi to start monitoring whenever power is turned on (and the sensors are connected).  The Raspberry can then operate 'blind' without a screen attached to to observe or need to interact with the Raspberry.
+/etc/rc.local file should also be modified, with the next to last line having:
+/home/pi/Startup.sh
+
+In turn, there should be a Startup.sh file (with permissions for anyone to execute) that calls the Python sensor programs (ie. /home/pi/python/Monitor.py)
